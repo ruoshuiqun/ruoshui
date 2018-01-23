@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.springframework.org/schema/beans
+        http://www.springframework.org/schema/beans/spring-beans.xsd">
+        
+    <!-- ViewResolver -->
+    <bean class="org.springframework.web.servlet.view.InternalResourceViewResolver">
+        <property name="viewClass" value="org.springframework.web.servlet.view.JstlView"/>
+        <property name="prefix" value="/WEB-INF/jsp/"/>
+        <property name="suffix" value=".jsp"/>
+    </bean>
+    
+    <!-- 处理器 -->
+    <bean name="/hello" class="cn.lq.controller.HelloWorldController"/>
+    
+    <bean name="/simpleForm" class="cn.lq.controller.RegisterSimpleFormController">
+        <property name="formView" value="register"/>
+        <property name="successView" value="redirect:/success"/>
+    </bean>
+    
+    <bean name="/HelloWorldWithoutReturnModelAndViewController" class="cn.lq.controller.HelloWorldWithoutReturnModelAndViewController" />
+    
+    <!-- 强制请求方法类型 -->
+        <bean name="/helloWithPOST" class="cn.lq.controller.HelloWorldController">
+           <property name="supportedMethods" value="POST"></property>    
+        </bean>
+      <!-- 当前请求的 session 前置条件检查，如果当前请求无 session 将抛出 HttpSessionRequiredException 异常 -->
+      <bean name="/helloRequireSession"  class="cn.lq.controller.HelloWorldController">
+            <property name="requireSession" value="true"/>
+     </bean>
+      
+      <bean name="/helloCache" class="cn.lq.controller.HelloWorldCacheController">
+          <property name="cacheSeconds" value="5"/>
+      </bean>
+     <bean name="/canCancelForm" class="cn.lq.controller.CanCancelRegisterSimpleFormController">
+        <property name="formView" value="register"/>
+        <property name="successView" value="redirect:/success"/>
+        
+        <property name="cancelParamKey" value="_cancel"/>
+        <property name="cancelView" value="redirect:/cancel"/>
+    </bean>
+    
+    <bean name="/success" class="cn.lq.controller.SuccessController"/>
+    <bean name="/cancel" class="cn.lq.controller.CancelController"/>
+    
+    <bean name="/infoFillWizard"
+          class="cn.lq.controller.InfoFillWizardFormController">
+      <property name="pages">
+            <list>
+               <value>wizard/baseInfo</value>
+               <value>wizard/schoolInfo</value>
+               <value>wizard/workInfo</value>
+            </list>
+       </property>
+    </bean>
+    <bean name="parameterizableView" class="org.springframework.web.servlet.mvc.ParameterizableViewController">
+        <property name="viewName" value="success"></property>
+    </bean>
+    <bean id="userService" class="cn.lq.chapter4.service.UserService" />
+    
+    <bean name="/user/**" class="cn.lq.controller.UserController">
+       <property name="userService" ref="userService"/>
+       <property name="createView" value="user/create"/>
+       <property name="updateView" value="user/update"/>
+       <property name="deleteView" value="user/delete"/>
+       <property name="listView"   value="user/list"/>
+       <property name="redirectToListView" value="redirect:/user/list"/>
+        <!-- 使用PropertiesMethodNameResolver来解析功能处理方法名 -->       
+       <!--property name="methodNameResolver" ref="propertiesMethodNameResolver"/-->
+    </bean>
+    
+    <bean id="propertiesMethodNameResolver" class="org.springframework.web.servlet.mvc.multiaction.PropertiesMethodNameResolver" >
+        <property name="mappings">
+             <props>
+                <prop key="/create">create</prop>
+                <prop key="/update">update</prop>
+                <prop key="/delete">delete</prop>
+                <prop key="/list">list</prop>
+                <!-- 默认的行为 -->
+                <prop key="/**">list</prop>
+             </props>
+        </property>
+    </bean>
+    <!-- 委托对象 -->
+    <bean id="userDelegate" class="cn.lq.controller.UserDelegate">
+         <property name="userService" ref="userService"/>
+         <property name="createView" value="user2/create"/>
+         <property name="updateView" value="user2/update"/>
+         <property name="deleteView" value="user2/delete"/>
+         <property name="listView"   value="user2/list"/>
+         <property name="redirectToListView" value="redirect:/user2/list"/>
+    </bean>
+    
+    <!-- 控制器对象 -->
+    <bean name="/user2/**" class="org.springframework.web.servlet.mvc.multiaction.MultiActionController">
+        <property name="delegate" ref="userDelegate" /> 
+        <property name="methodNameResolver" ref="parameterMethodNameResolver"/> 
+    </bean>
+    
+   <bean id="parameterMethodNameResolver" class="org.springframework.web.servlet.mvc.multiaction.ParameterMethodNameResolver">
+        <!-- 1、根据请求参数名解析功能方法名 -->
+        <property name="methodParamNames" value="create,update,delete"/>
+         <!-- 2、根据请求参数名的值解析功能方法名 -->
+         <property name="paramName" value="action"/>
+         
+         <property name="logicalMappings">
+             <props>
+                 <prop key="doList">list</prop>
+             </props>
+         </property>
+           <!-- 3、默认执行的功能处理方法 -->
+           <property name="defaultMethodName" value="list"/>
+   </bean> 
+   <bean id="myWebBindingInitializer" class="cn.lq.chapter4.web.controller.support.initializer.MyWebBindingInitializer"/>
+   <!-- 注册WebBindingInitializer实现 -->
+   <bean name="/dataBind" class="cn.lq.controller.DataBinderTestController">
+    <!-- 注入WebBindingInitializer实现 -->
+    <!-- <property name="webBindingInitializer" ref="myWebBindingInitializer"/>  --> 
+   </bean>
+    
+    <bean id="messageSource" class="org.springframework.context.support.ReloadableResourceBundleMessageSource">
+       <property name="basename" value="classpath:messages"/>
+       <property name="fileEncodings" value="utf-8"/>
+       <property name="cacheSeconds" value="120" />
+   </bean>
+   
+   <bean name="/dataBindError" class="cn.lq.controller.DataBinderErrorTestController">
+        <property name="formView"  value="bindAndValidate/input"/>
+        <property name="successView" value="bindAndValidate/success"/>
+   </bean>
+   
+   <bean id="userModelValidator" class="cn.lq.chapter4.web.controller.support.validator.UserModelValidator"/>
+   <bean name="/validator" class="cn.lq.controller.RegisterSimpleFormController">
+         <property name="formView" value="registerAndValidator" />
+         <property name="successView" value="redirect:/success" />
+         <property name="validator" ref="userModelValidator"/>
+   </bean>
+</beans>
